@@ -1,0 +1,46 @@
+import sqlite3
+import csv
+import datetime
+from memory_profiler import profile
+
+@profile
+def bd_deco(func):
+    def db(*args):
+        con = sqlite3.connect('cheaters.db')
+        cursor = con.cursor()
+        print("База данных успешно подключена к SQLite")
+        func(cursor,*args)
+        con.commit()
+        if con:
+            con.close()
+            print("Соединение с SQLite закрыто")
+        return None
+    return db
+
+@profile
+@bd_deco
+def record(cursor=None,file=None):
+    with open(file, 'r') as f:
+        dr = csv.DictReader(f)
+        header1, header2, header3, header4 = dr.fieldnames
+        data_csv = [(datetime.datetime.fromtimestamp(int(i[header1])), i[header2], i[header3], i[header4]) for i in dr]
+        cursor.executemany(
+            f"insert into client  ({header1}, {header2}, {header3}, {header4}) VALUES (?, ?,?,?);", data_csv)
+        print("Данные записаны")
+        return None
+
+@profile
+@bd_deco
+def insert_data_in_table(cursor=None):
+    cursor.execute(
+        """insert into new_table  (date,player_id,error_id,json_server,json_client) select s.timestamp date,  c.player_id , c.error_id , s.description json_server, c.description json_client from client c 
+    join server s on c.error_id = s.error_id 
+    where c."timestamp" between '2021-02-07' and '2021-02-08'
+    and player_id not in (select player_id from cheaters where ban_time < '2021-02-07');""")
+    return None
+
+
+
+if __name__ == "__main__":
+    record('client.csv')
+    insert_data_in_table()
