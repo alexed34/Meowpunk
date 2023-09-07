@@ -24,11 +24,12 @@ def record(cursor=None,file=None):
         dr = csv.DictReader(f)
         header1, header2, header3, header4 = dr.fieldnames
         data_csv = [(datetime.datetime.fromtimestamp(int(i[header1])), i[header2], i[header3], i[header4]) for i in dr]
-        name = file.split('.')[0]
-        cursor.executemany(
-            f"insert into {name}  ({header1}, {header2}, {header3}, {header4}) VALUES (?, ?,?,?);", data_csv)
-        print("Данные записаны", file)
-        return None
+    name = file.split('.')[0]
+    cursor.execute(f"SELECT name FROM sqlite_master WHERE name='{name}'")
+    cursor.executemany(
+        f"insert into {name}  ({header1}, {header2}, {header3}, {header4}) VALUES (?, ?,?,?);", data_csv)
+    print("Данные записаны", file)
+    return None
 
 @profile
 @bd_deco
@@ -45,5 +46,5 @@ def insert_data_in_table(cursor=None):
 
 if __name__ == "__main__":
     record('client.csv')
-    record('server.csv')
-    insert_data_in_table()
+    # record('server.csv')
+    # insert_data_in_table()
